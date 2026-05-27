@@ -215,9 +215,17 @@ def train(args):
     # --- Loss & Optimiser ---
     criterion = get_loss(args.loss, stems=STEMS, sample_rate=args.sample_rate).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, patience=8, factor=0.5
-    )
+
+    if args.overfit_one:
+        # CosineAnnealingLR: smoothly decays over the full run without reacting
+        # to noisy batch-level loss — ReduceLROnPlateau kills LR too early here
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=args.epochs, eta_min=args.lr * 0.01
+        )
+    else:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, patience=8, factor=0.5
+        )
 
     # --- Resume ---
     start_epoch = 0
@@ -256,7 +264,10 @@ def train(args):
 
         avg_loss = epoch_loss / len(loader)
         elapsed  = time.time() - t0
-        scheduler.step(avg_loss)
+        if isinstance(scheduler, torch.optim.lr_scheduler.CosineAnnealingLR):
+            scheduler.step()
+        else:
+            scheduler.step(avg_loss)
         lr_now   = optimizer.param_groups[0]["lr"]
 
         print(f"Epoch {epoch+1:4d}/{args.epochs} | Loss: {avg_loss:+.4f} | "

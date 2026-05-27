@@ -145,8 +145,14 @@ class MRSTFTLoss(nn.Module):
             pm = _stft_mag(pred_m, fft, hop, win, window)
             tm = _stft_mag(tgt_m,  fft, hop, win, window)
 
-            # Spectral convergence: ||T-P||_F / ||T||_F
-            sc = torch.norm(tm - pm, p="fro") / (torch.norm(tm, p="fro") + 1e-8)
+            # Guard: skip spectral convergence if target is near-silent
+            # (||T||_F < threshold), which would blow up the ratio.
+            # This happens with clean stems that have no hits in the chunk.
+            norm_tgt = torch.norm(tm, p="fro")
+            if norm_tgt > 1e-4:
+                sc = torch.norm(tm - pm, p="fro") / (norm_tgt + 1e-8)
+            else:
+                sc = torch.zeros(1, device=pred.device)
 
             # Log-magnitude L1 (compresses dynamic range, treats all freqs equally)
             log_l1 = F.l1_loss(torch.log(pm + 1e-7), torch.log(tm + 1e-7))
