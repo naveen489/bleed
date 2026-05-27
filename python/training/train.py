@@ -45,7 +45,7 @@ def save_checkpoint(model, optimizer, epoch, loss, path: Path):
         "optimizer_state_dict": optimizer.state_dict(),
         "loss": loss,
     }, path)
-    print(f"  ✓ Saved checkpoint → {path}")
+    print(f"  [OK] Saved checkpoint -> {path}")
 
 
 def load_checkpoint(path: Path, model, optimizer):
@@ -77,7 +77,7 @@ def train(args):
         return
 
     if args.overfit_one:
-        print("⚠  OVERFIT MODE: Training on a single take to validate the model.")
+        print("[OVERFIT MODE] Training on a single take to validate the model.")
         dataset = Subset(dataset, list(range(min(10, len(dataset)))))
 
     loader = DataLoader(
@@ -104,7 +104,7 @@ def train(args):
     criterion = SISNRLoss(stems=STEMS)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, patience=5, factor=0.5, verbose=True
+        optimizer, patience=5, factor=0.5
     )
 
     # --- Resume ---
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs",       type=int,   default=100)
     parser.add_argument("--batch_size",   type=int,   default=4)
     parser.add_argument("--lr",           type=float, default=3e-4)
-    parser.add_argument("--num_workers",  type=int,   default=4)
+    parser.add_argument("--num_workers",  type=int,   default=0,           help="DataLoader workers (0 = main process, safer on Windows)")
     parser.add_argument("--save_every",   type=int,   default=5,           help="Save checkpoint every N epochs")
     parser.add_argument("--checkpoint_dir", type=str, default="models/checkpoints")
 

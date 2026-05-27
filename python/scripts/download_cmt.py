@@ -18,9 +18,12 @@ import re
 import zipfile
 from pathlib import Path
 
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+
+# Shared cloudscraper session (handles Cloudflare JS challenges automatically)
+_scraper = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "mobile": False})
 
 CMT_URL = "https://www.cambridge-mt.com/ms/mtk/"
 
@@ -30,8 +33,7 @@ DRUM_GENRES = ["Acoustic", "Pop", "HipHop", "Electronica"]
 
 
 def fetch_page(url: str) -> BeautifulSoup:
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; BleedDatasetBot/1.0)"}
-    resp = requests.get(url, headers=headers, timeout=30)
+    resp = _scraper.get(url, timeout=30)
     resp.raise_for_status()
     return BeautifulSoup(resp.content, "html.parser")
 
@@ -75,7 +77,7 @@ def get_download_links(page: BeautifulSoup, genres: list[str]) -> list[dict]:
 def download_file(url: str, dest_path: Path) -> bool:
     """Stream-download a file with a progress bar."""
     try:
-        resp = requests.get(url, stream=True, timeout=60)
+        resp = _scraper.get(url, stream=True, timeout=120)
         resp.raise_for_status()
         total = int(resp.headers.get("content-length", 0))
         with open(dest_path, "wb") as f, tqdm(
