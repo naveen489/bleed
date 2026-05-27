@@ -46,6 +46,8 @@ data/raw/
 data/processed/
 data/cambridge_raw/
 models/checkpoints/
+output/
+
 
 
 # OS
