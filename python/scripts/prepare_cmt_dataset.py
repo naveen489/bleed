@@ -5,6 +5,30 @@ import librosa
 import soundfile as sf
 import numpy as np
 
+# Keyword sets used by both prepare and batch_prepare scripts
+STEM_KEYWORDS = {
+    'kick':      ['kick', 'kck', 'b.d', 'bd', 'bassdrum', 'bass drum'],
+    'snare':     ['snare', 'snr', 'sn', 's.d', 'sd', 'sd_top', 'sd_bot'],
+    'toms':      ['tom', 'toms', 't1', 't2', 't3', 'floor', 'rack', 'hi_tom', 'lo_tom'],
+    'overheads': ['oh', 'overhead', 'overheads', 'cymb', 'ride', 'crash',
+                  'hat', 'hh', 'hihat', 'hi-hat', 'room', 'amb', 'ambience', 'lr'],
+}
+
+DRUM_KEYWORDS = [
+    kw for kws in STEM_KEYWORDS.values() for kw in kws
+]
+
+
+def stem_keywords_has_drums(directory: Path) -> bool:
+    """Return True if any audio file in *directory* has a drum-related name."""
+    for f in Path(directory).rglob("*"):
+        if f.suffix.lower() in ('.wav', '.aif', '.aiff', '.flac'):
+            name = f.name.lower()
+            if any(kw in name for kw in DRUM_KEYWORDS):
+                return True
+    return False
+
+
 def merge_audio_files(input_files, output_file):
     """Mixes multiple audio files into one."""
     if not input_files:
@@ -47,12 +71,7 @@ def process_directory(source_dir, dest_dir):
     dest_dir.mkdir(parents=True, exist_ok=True)
     
     # Keyword matching for stems (handles common Cambridge MT naming conventions)
-    stem_keywords = {
-        'kick': ['kick', 'kck', 'b.d'],
-        'snare': ['snare', 'snr', 'sn', 's.d'],
-        'toms': ['tom', 't1', 't2', 't3', 'floor', 'rack'],
-        'overheads': ['oh', 'overhead', 'cymb', 'ride', 'crash', 'hat', 'hh', 'room', 'amb'] 
-    }
+    stem_keywords = STEM_KEYWORDS
     
     stem_files = {k: [] for k in stem_keywords.keys()}
     

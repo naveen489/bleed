@@ -3,3 +3,7 @@ torchaudio
 numpy
 librosa
 soundfile
+# Dataset download dependencies
+requests
+beautifulsoup4
+tqdm
